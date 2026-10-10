@@ -8,7 +8,7 @@ import Home from './pages/Home';
 import AboutPage from './pages/AboutPage';
 import TreatmentsPage from './pages/TreatmentsPage';
 import GalleryPage from './pages/GalleryPage';
-import TestimonialsPage from './pages/TestimonialsPage';
+import ReviewsPage from './pages/ReviewsPage';
 import ContactPage from './pages/ContactPage';
 import BookingPage from './pages/BookingPage';
 
@@ -32,7 +32,8 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/treatments" element={<TreatmentsPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/testimonials" element={<TestimonialsPage />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
+          <Route path="/testimonials" element={<ReviewsPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/booking" element={<BookingPage />} />
         </Routes>

@@ -103,7 +103,7 @@ const Treatments = () => {
               <div className="treatment-img-container">
                 <img src={treatment.image} alt={treatment.name} className="treatment-img" />
                 <div className="treatment-overlay">
-                  <Link to="/booking" className="btn btn-primary btn-book-hover">Book Now</Link>
+                  <a href="#booking" className="btn btn-primary btn-book-hover">Book Now</a>
                 </div>
               </div>
               <div className="treatment-content">

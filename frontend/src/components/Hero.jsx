@@ -34,14 +34,14 @@ const Hero = () => {
             </p>
             
             <div className="hero-actions">
-              <Link to="/booking" className="btn btn-primary btn-lg pulse-button">
+              <a href="#booking" className="btn btn-primary btn-lg pulse-button">
                 <Calendar className="btn-icon" />
                 Book Appointment
-              </Link>
-              <Link to="/treatments" className="btn btn-outline btn-lg hero-outline-btn">
+              </a>
+              <a href="#treatments" className="btn btn-outline btn-lg hero-outline-btn">
                 Explore Treatments
                 <ArrowRight className="btn-icon" />
-              </Link>
+              </a>
             </div>
           </motion.div>
         </div>

@@ -38,7 +38,7 @@ const reasons = [
 
 const WhyChooseUs = () => {
   return (
-    <section className="section why-choose-us">
+    <section id="why-us" className="section why-choose-us">
       <div className="container">
         <div className="section-header text-center">
           <motion.div

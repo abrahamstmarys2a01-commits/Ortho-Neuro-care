@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { bookAppointmentApi, getTreatmentsApi, getDoctorsApi } from '../services/api';
 import './Booking.css';
 
 const Booking = () => {
@@ -9,35 +10,118 @@ const Booking = () => {
     phone: '',
     email: '',
     treatment: '',
+    treatmentId: '',
     therapist: '',
+    doctorId: '',
     date: '',
     time: '',
     message: ''
   });
 
+  const [treatmentsList, setTreatmentsList] = useState([]);
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: '', message: '', appointmentCode: '' });
+
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const [treatmentsData, doctorsData] = await Promise.all([
+          getTreatmentsApi(),
+          getDoctorsApi()
+        ]);
+        setTreatmentsList(treatmentsData);
+        setDoctorsList(doctorsData);
+      } catch (err) {
+        console.warn('Could not load dynamic dropdowns, using defaults:', err.message);
+      }
+    };
+    fetchDropdownData();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name === 'treatment') {
+      const selected = treatmentsList.find(t => t.title === value);
+      setFormData(prev => ({
+        ...prev,
+        treatment: value,
+        treatmentId: selected ? selected._id : ''
+      }));
+      return;
+    }
+
+    if (name === 'therapist') {
+      const selected = doctorsList.find(d => d.name === value);
+      setFormData(prev => ({
+        ...prev,
+        therapist: value,
+        doctorId: selected ? selected._id : ''
+      }));
+      return;
+    }
+
     setFormData(prevState => ({
       ...prevState,
       [name]: value
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real application, handle form submission here
-    console.log('Form submitted:', formData);
-    alert('Thank you for booking! We will confirm your appointment shortly.');
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      treatment: '',
-      therapist: '',
-      date: '',
-      time: '',
-      message: ''
-    });
+    setLoading(true);
+    setStatus({ type: '', message: '', appointmentCode: '' });
+
+    try {
+      const response = await bookAppointmentApi(formData);
+      setStatus({
+        type: 'success',
+        message: response.message || 'Thank you for booking! We will confirm your appointment shortly.',
+        appointmentCode: response.appointmentCode || ''
+      });
+
+      // Also broadcast for instant multi-tab sync in ERP
+      try {
+        const bc = new BroadcastChannel('ortho_neuro_auir_sync');
+        bc.postMessage({
+          type: 'NEW_BOOKING',
+          payload: {
+            customerName: formData.name,
+            customerMobile: formData.phone,
+            customerEmail: formData.email,
+            service: formData.treatment,
+            date: formData.date,
+            time: formData.time,
+            source: 'ortho-neuro-care.vercel.app',
+            message: formData.message,
+            id: response.appointmentCode
+          }
+        });
+        bc.close();
+      } catch (err) {}
+
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        treatment: '',
+        treatmentId: '',
+        therapist: '',
+        doctorId: '',
+        date: '',
+        time: '',
+        message: ''
+      });
+    } catch (err) {
+      setStatus({
+        type: 'error',
+        message: err.message || 'Something went wrong. Please try again.',
+        appointmentCode: ''
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,6 +151,26 @@ const Booking = () => {
                 Schedule your wellness session today and step into a world of ultimate relaxation.
               </p>
             </div>
+
+            {status.message && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '0.95rem',
+                  backgroundColor: status.type === 'success' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: status.type === 'success' ? '#22c55e' : '#ef4444',
+                  border: `1px solid ${status.type === 'success' ? '#22c55e' : '#ef4444'}`
+                }}
+              >
+                {status.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                <span>{status.message}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="booking-form">
               <div className="form-row">
@@ -123,14 +227,20 @@ const Booking = () => {
                     className="form-control"
                   >
                     <option value="" disabled>Choose a therapy</option>
-                    <option value="Abhyanga Massage">Abhyanga Massage</option>
-                    <option value="Shirodhara">Shirodhara</option>
-                    <option value="Deep Tissue Massage">Deep Tissue Massage</option>
-                    <option value="Aromatherapy">Aromatherapy</option>
-                    <option value="Panchakarma">Panchakarma</option>
-                    <option value="Foot Reflexology">Foot Reflexology</option>
-                    <option value="Head Massage">Head Massage</option>
-                    <option value="Steam Therapy">Steam Therapy</option>
+                    {treatmentsList && treatmentsList.length > 0 ? (
+                      treatmentsList.map((t) => (
+                        <option key={t._id || t.title} value={t.title}>
+                          {t.title} {t.durationMinutes ? `(${t.durationMinutes} mins)` : ''}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Abhyanga Massage">Abhyanga Massage</option>
+                        <option value="Shirodhara">Shirodhara</option>
+                        <option value="Deep Tissue Massage">Deep Tissue Massage</option>
+                        <option value="Panchakarma">Panchakarma</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -163,7 +273,7 @@ const Booking = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="therapist">Preferred Therapist (Optional)</label>
+                <label htmlFor="therapist">Preferred Doctor / Therapist</label>
                 <select 
                   id="therapist" 
                   name="therapist" 
@@ -171,9 +281,19 @@ const Booking = () => {
                   onChange={handleChange}
                   className="form-control"
                 >
-                  <option value="">Any Therapist</option>
-                  <option value="Male Therapist">Male Therapist</option>
-                  <option value="Female Therapist">Female Therapist</option>
+                  <option value="">Any Available Specialist</option>
+                  {doctorsList && doctorsList.length > 0 ? (
+                    doctorsList.map((doc) => (
+                      <option key={doc._id || doc.name} value={doc.name}>
+                        {doc.name} - {doc.specialization || doc.role}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Male Therapist">Male Therapist</option>
+                      <option value="Female Therapist">Female Therapist</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -190,8 +310,16 @@ const Booking = () => {
                 ></textarea>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-submit">
-                Book Appointment <Send size={18} />
+              <button type="submit" className="btn btn-primary btn-submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    Processing... <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                  </>
+                ) : (
+                  <>
+                    Book Appointment <Send size={18} />
+                  </>
+                )}
               </button>
             </form>
           </motion.div>

@@ -1,11 +1,11 @@
 import React from 'react';
-import Testimonials from '../components/Testimonials';
+import Reviews from '../components/Reviews';
 
 const TestimonialsPage = () => {
   return (
-    <>
-      <Testimonials />
-    </>
+    <div style={{ paddingTop: '80px' }}>
+      <Reviews />
+    </div>
   );
 };
 

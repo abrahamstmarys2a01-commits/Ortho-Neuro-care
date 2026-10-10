@@ -38,7 +38,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="section faq-section">
+    <section id="faq" className="section faq-section">
       <div className="container">
         <div className="faq-grid">
           <motion.div

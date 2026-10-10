@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Loader2 } from 'lucide-react';
+import { subscribeNewsletterApi } from '../services/api';
 import './Footer.css';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+    setFeedback({ type: '', text: '' });
+
+    try {
+      const res = await subscribeNewsletterApi(email);
+      setFeedback({ type: 'success', text: res.message || 'Subscribed successfully!' });
+      setEmail('');
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || 'Subscription failed.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,11 +50,12 @@ const Footer = () => {
           <div className="footer-col">
             <h4>Quick Links</h4>
             <ul className="footer-links">
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/gallery">Gallery</Link></li>
-              <li><Link to="/testimonials">Testimonials</Link></li>
-              <li><Link to="/booking">Book Appointment</Link></li>
+              <li><a href="#home">Home</a></li>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#treatments">Our Therapies</a></li>
+              <li><a href="#gallery">Gallery</a></li>
+              <li><a href="#reviews">Reviews</a></li>
+              <li><a href="#booking">Book Appointment</a></li>
             </ul>
           </div>
 
@@ -52,10 +75,27 @@ const Footer = () => {
             <p className="footer-desc mb-3">
               Subscribe to receive wellness tips and exclusive offers.
             </p>
-            <form className="newsletter-form">
-              <input type="email" placeholder="Your email address" required />
-              <button type="submit" className="btn-accent">Subscribe</button>
+            <form className="newsletter-form" onSubmit={handleSubscribe}>
+              <input 
+                type="email" 
+                placeholder="Your email address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+              />
+              <button type="submit" className="btn-accent" disabled={loading}>
+                {loading ? 'Subscribing...' : 'Subscribe'}
+              </button>
             </form>
+            {feedback.text && (
+              <p style={{
+                marginTop: '8px',
+                fontSize: '0.85rem',
+                color: feedback.type === 'success' ? '#4ade80' : '#f87171'
+              }}>
+                {feedback.text}
+              </p>
+            )}
           </div>
         </div>
 
