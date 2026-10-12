@@ -357,7 +357,7 @@ const Booking = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="therapist">Preferred Doctor / Specialist</label>
+                  <label htmlFor="therapist">Preferred Doctor</label>
                   <select 
                     id="therapist" 
                     name="therapist" 
@@ -366,19 +366,8 @@ const Booking = () => {
                     className="form-control"
                   >
                     <option value="">Any Available Specialist</option>
-                    {doctorsList && doctorsList.length > 0 ? (
-                      doctorsList.map((doc) => (
-                        <option key={doc._id || doc.name} value={doc.name}>
-                          {doc.name} - {doc.specialization || doc.role}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Male Therapist">Male Therapist</option>
-                        <option value="Female Therapist">Female Therapist</option>
-                        <option value="Dr. Rajesh Sharma, BAMS, MD (Ayu)">Dr. Rajesh Sharma, BAMS, MD (Ayu)</option>
-                      </>
-                    )}
+                    <option value="Male Doctor">Male Doctor</option>
+                    <option value="Female Doctor">Female Doctor</option>
                   </select>
                 </div>
               </div>
@@ -408,31 +397,6 @@ const Booking = () => {
                     className="form-control"
                   />
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="therapist">Preferred Doctor / Therapist</label>
-                <select 
-                  id="therapist" 
-                  name="therapist" 
-                  value={formData.therapist}
-                  onChange={handleChange}
-                  className="form-control"
-                >
-                  <option value="">Any Available Specialist</option>
-                  {doctorsList && doctorsList.length > 0 ? (
-                    doctorsList.map((doc) => (
-                      <option key={doc._id || doc.name} value={doc.name}>
-                        {doc.name} - {doc.specialization || doc.role}
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Male Therapist">Male Therapist</option>
-                      <option value="Female Therapist">Female Therapist</option>
-                    </>
-                  )}
-                </select>
               </div>
 
               <div className="form-group">
