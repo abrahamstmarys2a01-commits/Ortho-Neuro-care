@@ -1,13 +1,11 @@
-// Dynamic resilient API client for Ortho Neuro Care Public Website
+// Live Render Backend API Client for Ortho Neuro Care Public Website
+const RENDER_BACKEND_API = 'https://ortho-neuro-care.onrender.com/api';
+
 const getApiBaseUrl = () => {
-  // If running on HTTPS (e.g. Vercel deployment), avoid insecure HTTP localhost calls
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
-      return import.meta.env.VITE_API_URL;
-    }
-    return '/api';
+  if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== '') {
+    return import.meta.env.VITE_API_URL;
   }
-  return import.meta.env.VITE_API_URL || '/api';
+  return RENDER_BACKEND_API;
 };
 
 // Fallback Treatments dataset (Always guarantees functional UI)

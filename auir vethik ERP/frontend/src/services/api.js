@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ortho-neuro-care.onrender.com/api';
 
 // Transform backend appointment format to ERP format
 export const mapBackendToErpAppointment = (apt) => {
