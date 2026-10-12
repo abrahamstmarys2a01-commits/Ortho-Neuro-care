@@ -41,6 +41,16 @@ const Booking = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'phone') {
+      // Strictly allow numbers only and stop at 10 digits
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({
+        ...prev,
+        phone: digitsOnly
+      }));
+      return;
+    }
     
     if (name === 'treatment') {
       const selected = treatmentsList.find(t => t.title === value);
@@ -71,8 +81,39 @@ const Booking = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setStatus({ type: '', message: '', appointmentCode: '' });
+
+    // Strict validation: Block submit if any required field is missing or invalid
+    if (!formData.name.trim()) {
+      setStatus({ type: 'error', message: 'Please enter your Full Name.' });
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setStatus({ type: 'error', message: 'Please enter your Mobile Number.' });
+      return;
+    }
+    if (formData.phone.replace(/\D/g, '').length !== 10) {
+      setStatus({ type: 'error', message: 'Mobile number must be exactly 10 digits.' });
+      return;
+    }
+    if (!formData.email.trim()) {
+      setStatus({ type: 'error', message: 'Please enter your Email Address.' });
+      return;
+    }
+    if (!formData.treatment.trim()) {
+      setStatus({ type: 'error', message: 'Please select a Treatment.' });
+      return;
+    }
+    if (!formData.date.trim()) {
+      setStatus({ type: 'error', message: 'Please select an Appointment Date.' });
+      return;
+    }
+    if (!formData.time.trim()) {
+      setStatus({ type: 'error', message: 'Please select an Appointment Time.' });
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const bookingPayload = {
@@ -214,7 +255,7 @@ const Booking = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="phone">Phone Number</label>
+                  <label htmlFor="phone">Mobile Number (10 Digits)</label>
                   <input 
                     type="tel" 
                     id="phone" 
@@ -222,7 +263,10 @@ const Booking = () => {
                     value={formData.phone}
                     onChange={handleChange}
                     required 
-                    placeholder="+91 98765 43210"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    title="Please enter exactly 10 digits"
+                    placeholder="Enter 10-digit mobile number"
                     className="form-control"
                   />
                 </div>

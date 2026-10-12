@@ -80,11 +80,26 @@ const getStoredCredentials = () => {
   return DEFAULT_CREDENTIALS;
 };
 
+const getInitialSessionUser = () => {
+  try {
+    const raw = localStorage.getItem('ortho_erp_session');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading session', e);
+  }
+  return null;
+};
+
 export const AppProvider = ({ children }) => {
-  // Authentication State: Always displays login page first upon opening ERP link
+  // Authentication State: Session persists across refresh, shows login only after logout
   const [credentials, setCredentials] = useState(getStoredCredentials);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(getInitialSessionUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!getInitialSessionUser());
 
   // Navigation
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -330,7 +345,6 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('auir_appointments');
     localStorage.removeItem('auir_enquiries');
     localStorage.removeItem('auir_reviews');
-    localStorage.removeItem('ortho_erp_session');
 
     syncLiveBackend(true);
 

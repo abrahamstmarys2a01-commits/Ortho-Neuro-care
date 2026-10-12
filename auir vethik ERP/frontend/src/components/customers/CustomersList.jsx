@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpen }) => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer, appointments, searchQuery } = useApp();
+  const { customers, addCustomer, updateCustomer, deleteCustomer, appointments, searchQuery, showToast } = useApp();
 
   const [statusFilter, setStatusFilter] = useState('All');
   const [sourceFilter, setSourceFilter] = useState('All');
@@ -63,8 +63,25 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
 
   const handleCreateCustomer = (e) => {
     e.preventDefault();
-    if (!newCustomerForm.name || !newCustomerForm.mobile) return;
-    addCustomer(newCustomerForm);
+    if (!newCustomerForm.name.trim()) {
+      showToast('Validation Error', 'Customer Name is required.', 'error');
+      return;
+    }
+    const cleanMobile = newCustomerForm.mobile.replace(/\D/g, '');
+    if (!cleanMobile) {
+      showToast('Validation Error', 'Mobile Number is required.', 'error');
+      return;
+    }
+    if (cleanMobile.length !== 10) {
+      showToast('Validation Error', 'Mobile Number must be exactly 10 digits.', 'error');
+      return;
+    }
+
+    addCustomer({
+      ...newCustomerForm,
+      name: newCustomerForm.name.trim(),
+      mobile: cleanMobile
+    });
     setNewCustomerForm({
       name: '',
       mobile: '',
@@ -80,7 +97,25 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
   const handleUpdateCustomer = (e) => {
     e.preventDefault();
     if (!editCustomer) return;
-    updateCustomer(editCustomer.id, editCustomer);
+    if (!editCustomer.name.trim()) {
+      showToast('Validation Error', 'Customer Name is required.', 'error');
+      return;
+    }
+    const cleanMobile = editCustomer.mobile.replace(/\D/g, '');
+    if (!cleanMobile) {
+      showToast('Validation Error', 'Mobile Number is required.', 'error');
+      return;
+    }
+    if (cleanMobile.length !== 10) {
+      showToast('Validation Error', 'Mobile Number must be exactly 10 digits.', 'error');
+      return;
+    }
+
+    updateCustomer(editCustomer.id, {
+      ...editCustomer,
+      name: editCustomer.name.trim(),
+      mobile: cleanMobile
+    });
     setEditCustomer(null);
   };
 
@@ -378,13 +413,19 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
               </div>
 
               <div className="form-group">
-                <label className="form-label">Mobile Number <span className="required">*</span></label>
+                <label className="form-label">Mobile Number (10 Digits) <span className="required">*</span></label>
                 <input
                   type="tel"
                   className="form-input"
-                  placeholder="+91 98765 43210"
+                  placeholder="Enter 10-digit mobile number"
                   value={newCustomerForm.mobile}
-                  onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setNewCustomerForm({ ...newCustomerForm, mobile: digits });
+                  }}
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Mobile number must be exactly 10 digits"
                   required
                 />
               </div>
@@ -481,12 +522,19 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
               </div>
 
               <div className="form-group">
-                <label className="form-label">Mobile</label>
+                <label className="form-label">Mobile Number (10 Digits) <span className="required">*</span></label>
                 <input
                   type="tel"
                   className="form-input"
+                  placeholder="Enter 10-digit mobile number"
                   value={editCustomer.mobile}
-                  onChange={(e) => setEditCustomer({ ...editCustomer, mobile: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setEditCustomer({ ...editCustomer, mobile: digits });
+                  }}
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Mobile number must be exactly 10 digits"
                   required
                 />
               </div>

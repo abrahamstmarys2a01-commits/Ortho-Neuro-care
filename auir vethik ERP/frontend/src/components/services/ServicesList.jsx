@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const ServicesList = ({ isAddServiceModalOpen, setIsAddServiceModalOpen }) => {
-  const { services, addService, updateService, deleteService } = useApp();
+  const { services, addService, updateService, deleteService, showToast } = useApp();
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -35,8 +35,20 @@ export const ServicesList = ({ isAddServiceModalOpen, setIsAddServiceModalOpen }
 
   const handleCreateService = (e) => {
     e.preventDefault();
-    if (!newServiceForm.name || !newServiceForm.price) return;
-    addService(newServiceForm);
+    if (!newServiceForm.name.trim()) {
+      showToast('Validation Error', 'Please enter a service name.', 'error');
+      return;
+    }
+    if (!newServiceForm.price || Number(newServiceForm.price) <= 0) {
+      showToast('Validation Error', 'Please enter a valid positive price.', 'error');
+      return;
+    }
+
+    addService({
+      ...newServiceForm,
+      name: newServiceForm.name.trim(),
+      price: Number(newServiceForm.price)
+    });
     setNewServiceForm({
       name: '',
       description: '',
@@ -51,7 +63,20 @@ export const ServicesList = ({ isAddServiceModalOpen, setIsAddServiceModalOpen }
   const handleUpdateService = (e) => {
     e.preventDefault();
     if (!editingService) return;
-    updateService(editingService.id, editingService);
+    if (!editingService.name.trim()) {
+      showToast('Validation Error', 'Please enter a service name.', 'error');
+      return;
+    }
+    if (!editingService.price || Number(editingService.price) <= 0) {
+      showToast('Validation Error', 'Please enter a valid positive price.', 'error');
+      return;
+    }
+
+    updateService(editingService.id, {
+      ...editingService,
+      name: editingService.name.trim(),
+      price: Number(editingService.price)
+    });
     setEditingService(null);
   };
 
