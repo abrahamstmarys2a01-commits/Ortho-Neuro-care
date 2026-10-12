@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { bookAppointmentApi, getTreatmentsApi, getDoctorsApi } from '../services/api';
+import { bookAppointmentApi, getTreatmentsApi } from '../services/api';
 import './Booking.css';
 
 const Booking = () => {
@@ -20,21 +20,16 @@ const Booking = () => {
   });
 
   const [treatmentsList, setTreatmentsList] = useState([]);
-  const [doctorsList, setDoctorsList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '', appointmentCode: '' });
 
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [treatmentsData, doctorsData] = await Promise.all([
-          getTreatmentsApi(),
-          getDoctorsApi()
-        ]);
+        const treatmentsData = await getTreatmentsApi();
         setTreatmentsList(treatmentsData);
-        setDoctorsList(doctorsData);
       } catch (err) {
-        console.warn('Could not load dynamic dropdowns, using defaults:', err.message);
+        console.warn('Could not load treatments list:', err.message);
       }
     };
     fetchDropdownData();
@@ -65,11 +60,10 @@ const Booking = () => {
     }
 
     if (name === 'therapist') {
-      const selected = doctorsList.find(d => d.name === value);
       setFormData(prev => ({
         ...prev,
         therapist: value,
-        doctorId: selected ? selected._id : ''
+        doctorId: ''
       }));
       return;
     }
