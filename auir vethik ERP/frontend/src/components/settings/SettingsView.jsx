@@ -96,8 +96,12 @@ export const SettingsView = () => {
   };
 
   const handleResetData = () => {
-    if (window.confirm('Reset all demo data to default state?')) {
+    if (window.confirm('Clear local cache and refresh all data from database?')) {
+      const auth = localStorage.getItem('ortho_erp_session');
+      const creds = localStorage.getItem('ortho_erp_auth_credentials');
       localStorage.clear();
+      if (auth) localStorage.setItem('ortho_erp_session', auth);
+      if (creds) localStorage.setItem('ortho_erp_auth_credentials', creds);
       window.location.reload();
     }
   };
@@ -498,7 +502,7 @@ export const SettingsView = () => {
             className="btn-subtle"
             style={{ color: '#c93b3b' }}
           >
-            <RefreshCcw size={14} /> Reset Demo Data to Default
+            <RefreshCcw size={14} /> Clear Cache &amp; Refresh Data
           </button>
 
           <button type="submit" className="btn-primary" style={{ padding: '10px 22px' }}>

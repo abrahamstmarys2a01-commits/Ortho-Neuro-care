@@ -50,7 +50,12 @@ export const UpcomingAppointments = () => {
 
       {/* List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'space-around' }}>
-        {displayedAppointments.map((apt) => (
+        {displayedAppointments.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '24px 10px', color: '#7a8c7e', fontSize: '0.85rem' }}>
+            No upcoming appointments found.
+          </div>
+        ) : (
+          displayedAppointments.map((apt) => (
           <div
             key={apt.id}
             style={{
@@ -131,7 +136,7 @@ export const UpcomingAppointments = () => {
               )}
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

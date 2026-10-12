@@ -24,7 +24,6 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
     notifications, 
     setNotifications, 
     setActiveTab, 
-    receiveExternalBooking,
     logout,
     currentUser,
     credentials
@@ -37,25 +36,6 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
 
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
-  };
-
-  const simulateQuickBooking = () => {
-    const demoPatients = [
-      { name: 'Dr. Vigneshwaran', phone: '+91 98409 77123', service: 'Ayurveda Consultation', price: 500, message: 'Referred from Ortho Neuro care for cervical spine balance.' },
-      { name: 'Dr. Saravanan K', phone: '+91 97890 12345', service: 'Rejuvenation Therapy', price: 2000, message: 'Online booking via https://ortho-neuro-care.vercel.app/' },
-      { name: 'Kavitha Natarajan', phone: '+91 94441 55667', service: 'Detox Program', price: 1500, message: 'Seasonal panchakarma detox requested.' }
-    ];
-    const patient = demoPatients[Math.floor(Math.random() * demoPatients.length)];
-    receiveExternalBooking({
-      customerName: patient.name,
-      customerMobile: patient.phone,
-      service: patient.service,
-      price: patient.price,
-      date: new Date().toISOString().split('T')[0],
-      time: '11:30 AM',
-      source: 'ortho-neuro-care.vercel.app',
-      message: patient.message
-    });
   };
 
   return (
