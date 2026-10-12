@@ -19,8 +19,20 @@ connectDB();
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🌿 Ortho Neuro Care & Ayurvedic ERP API running on http://localhost:${PORT}`);
   console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
   console.log(`📋 API Documentation: http://localhost:${PORT}/\n`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`⚠️ Port ${PORT} busy, retrying in 1.5 seconds...`);
+    setTimeout(() => {
+      server.close();
+      server.listen(PORT);
+    }, 1500);
+  } else {
+    console.error('❌ Server startup error:', err);
+  }
 });

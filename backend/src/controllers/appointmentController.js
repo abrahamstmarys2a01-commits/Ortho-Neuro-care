@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 import Appointment from '../models/Appointment.js';
+import Customer from '../models/Customer.js';
 
 let fallbackAppointments = [];
+
+const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id) && typeof id === 'string' && id.length === 24;
 
 // @desc    Book a new appointment (from Website or ERP)
 // @route   POST /api/appointments
@@ -21,18 +24,20 @@ export const createAppointment = async (req, res) => {
       timeSlot,
       message,
       source,
+      price,
     } = req.body;
 
     const patientName = name || req.body.patient?.name;
     const patientPhone = phone || req.body.patient?.phone;
-    const patientEmail = email || req.body.patient?.email;
+    const patientEmail = email || req.body.patient?.email || '';
     const treatmentName = treatment || req.body.treatmentName;
     const selectedTime = time || timeSlot;
+    const aptPrice = Number(price) || 1500;
 
-    if (!patientName || !patientPhone || !patientEmail || !treatmentName || !date || !selectedTime) {
+    if (!patientName || !patientPhone || !treatmentName || !date || !selectedTime) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields: name, phone, email, treatment, date, and time.',
+        message: 'Please provide all required fields: name, phone, treatment, date, and time.',
       });
     }
 
@@ -46,12 +51,13 @@ export const createAppointment = async (req, res) => {
         phone: patientPhone,
         email: patientEmail,
       },
-      treatmentId: treatmentId || null,
+      treatmentId: isValidObjectId(treatmentId) ? treatmentId : undefined,
       treatmentName,
-      doctorId: doctorId || null,
+      doctorId: isValidObjectId(doctorId) ? doctorId : undefined,
       doctorName: therapist || 'Any Therapist',
       date,
       timeSlot: selectedTime,
+      price: aptPrice,
       message: message || '',
       status: 'Pending',
       source: source || 'Website',
@@ -60,6 +66,25 @@ export const createAppointment = async (req, res) => {
 
     if (mongoose.connection.readyState === 1) {
       const appointment = await Appointment.create(appointmentPayload);
+
+      // Auto-sync customer to ERP Customers list
+      try {
+        await Customer.findOneAndUpdate(
+          { mobile: patientPhone },
+          {
+            name: patientName,
+            mobile: patientPhone,
+            email: patientEmail,
+            source: source || 'Website',
+            lastVisit: date,
+            $inc: { totalVisits: 1 },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      } catch (custErr) {
+        // Log quietly without blocking appointment creation
+        console.warn('Customer auto-sync note:', custErr.message);
+      }
       return res.status(201).json({
         success: true,
         message: 'Appointment booked successfully!',
@@ -149,13 +174,14 @@ export const updateAppointmentStatus = async (req, res) => {
     const { status, doctorId, doctorName, date, timeSlot, notes } = req.body;
 
     if (mongoose.connection.readyState === 1) {
-      const appointment = await Appointment.findById(id);
+      const filter = (mongoose.Types.ObjectId.isValid(id) && id.length === 24) ? { _id: id } : { appointmentCode: id };
+      const appointment = await Appointment.findOne(filter);
       if (!appointment) {
         return res.status(404).json({ success: false, message: 'Appointment not found' });
       }
 
       if (status) appointment.status = status;
-      if (doctorId) appointment.doctorId = doctorId;
+      if (doctorId) appointment.doctorId = isValidObjectId(doctorId) ? doctorId : undefined;
       if (doctorName) appointment.doctorName = doctorName;
       if (date) appointment.date = date;
       if (timeSlot) appointment.timeSlot = timeSlot;
@@ -185,6 +211,29 @@ export const updateAppointmentStatus = async (req, res) => {
         message: `Appointment updated to ${appointment.status}`,
         data: appointment,
       });
+    }
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete appointment (from ERP Admin)
+// @route   DELETE /api/appointments/:id
+// @access  Admin / ERP
+export const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (mongoose.connection.readyState === 1) {
+      const filter = (mongoose.Types.ObjectId.isValid(id) && id.length === 24) ? { _id: id } : { appointmentCode: id };
+      const deleted = await Appointment.findOneAndDelete(filter);
+      if (!deleted) {
+        return res.status(404).json({ success: false, message: 'Appointment not found' });
+      }
+      return res.status(200).json({ success: true, message: 'Appointment deleted successfully' });
+    } else {
+      fallbackAppointments = fallbackAppointments.filter((a) => a._id !== id && a.appointmentCode !== id);
+      return res.status(200).json({ success: true, message: 'Appointment deleted successfully' });
     }
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

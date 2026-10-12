@@ -113,7 +113,7 @@ export const bookAppointmentApi = async (data) => {
     customerName: data.name || data.patient?.name || 'Patient',
     customerMobile: data.phone || data.patient?.phone || '',
     customerEmail: data.email || data.patient?.email || '',
-    service: data.treatment || data.treatmentName || 'Ayurveda Consultation',
+    service: data.treatment || data.treatmentName || 'Abhyanga Massage',
     serviceId: data.treatmentId || null,
     therapist: data.therapist || data.doctorName || 'Dr. Anand Vaidya',
     doctorId: data.doctorId || null,
@@ -122,7 +122,7 @@ export const bookAppointmentApi = async (data) => {
     status: 'Pending',
     source: 'ortho-neuro-care-frontend.vercel.app',
     message: data.message || '',
-    price: data.price || 500,
+    price: data.price || 2500,
     createdAt: new Date().toISOString(),
   };
 

@@ -17,7 +17,7 @@ export const mapBackendToErpAppointment = (apt) => {
     status: apt.status || 'Pending',
     source: apt.source === 'Website' ? 'ortho-neuro-care-frontend.vercel.app' : (apt.source || 'Website'),
     message: apt.message || '',
-    price: apt.price || 500,
+    price: apt.price || 1500,
     createdAt: apt.createdAt ? new Date(apt.createdAt).toLocaleString('en-GB') : new Date().toLocaleString('en-GB'),
   };
 };
@@ -78,6 +78,18 @@ export const updateLiveAppointmentStatus = async (id, status, extraData = {}) =>
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.message || 'Failed to update status');
+  }
+  return result;
+};
+
+// Delete appointment on backend
+export const deleteLiveAppointment = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+    method: 'DELETE',
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to delete appointment');
   }
   return result;
 };

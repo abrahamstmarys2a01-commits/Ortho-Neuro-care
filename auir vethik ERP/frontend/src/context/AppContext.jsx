@@ -4,6 +4,7 @@ import {
   fetchLiveAppointments,
   createLiveAppointment,
   updateLiveAppointmentStatus,
+  deleteLiveAppointment,
   fetchLiveServices,
   fetchLiveReviews,
   createLiveReview,
@@ -205,7 +206,19 @@ export const AppProvider = ({ children }) => {
           }
         });
 
-        setAppointments(liveApts);
+        let mergedApts = [...liveApts];
+        try {
+          const queued = JSON.parse(localStorage.getItem('ortho_appointments_queue') || '[]');
+          if (queued && queued.length > 0) {
+            queued.forEach(q => {
+              if (!mergedApts.some(a => a.id === q.id)) {
+                mergedApts.unshift(q);
+              }
+            });
+          }
+        } catch (e) {}
+
+        setAppointments(mergedApts);
 
         if (newOnlineBookings.length > 0) {
           const latest = newOnlineBookings[0];
@@ -332,8 +345,28 @@ export const AppProvider = ({ children }) => {
         if (event.data?.type === 'NEW_BOOKING' && event.data?.payload) {
           const apt = event.data.payload;
           setAppointments((prev) => [apt, ...prev.filter((a) => a.id !== apt.id)]);
+          knownAptIdsRef.current.add(apt.id);
           playSoundChime();
+          try {
+            confetti({
+              particleCount: 75,
+              spread: 80,
+              origin: { y: 0.6 },
+              colors: ['#1e4d2b', '#52b788', '#d4a373', '#ffd166']
+            });
+          } catch (e) {}
           showToast('⚡ Live Website Booking!', `New booking from ${apt.customerName} for ${apt.service} (${apt.time})`);
+          setNotifications((prev) => [
+            {
+              id: Date.now(),
+              title: '🌟 New Website Booking',
+              desc: `${apt.customerName} booked ${apt.service} on ${apt.date} at ${apt.time}`,
+              time: 'Just now',
+              unread: true,
+              source: 'Website'
+            },
+            ...prev
+          ]);
         }
       };
     } catch (e) {}
@@ -395,8 +428,13 @@ export const AppProvider = ({ children }) => {
     showToast('Rescheduled', `Appointment ${id} moved to ${newDate} at ${newTime}`);
   };
 
-  const deleteAppointment = (id) => {
+  const deleteAppointment = async (id) => {
     setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+    try {
+      await deleteLiveAppointment(id);
+    } catch (err) {
+      console.warn('Backend delete sync note:', err.message);
+    }
     showToast('Deleted', `Appointment ${id} removed.`, 'info');
   };
 

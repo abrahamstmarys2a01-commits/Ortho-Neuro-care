@@ -47,7 +47,8 @@ const Booking = () => {
       setFormData(prev => ({
         ...prev,
         treatment: value,
-        treatmentId: selected ? selected._id : ''
+        treatmentId: selected ? selected._id : '',
+        price: selected ? (selected.price || 2500) : 2500
       }));
       return;
     }
@@ -74,31 +75,55 @@ const Booking = () => {
     setStatus({ type: '', message: '', appointmentCode: '' });
 
     try {
-      const response = await bookAppointmentApi(formData);
+      const bookingPayload = {
+        ...formData,
+        price: formData.price || 2500,
+        source: 'Website'
+      };
+
+      const response = await bookAppointmentApi(bookingPayload);
+      const apptCode = response.appointmentCode || response.data?.appointmentCode || `APT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
       setStatus({
         type: 'success',
         message: response.message || 'Thank you for booking! We will confirm your appointment shortly.',
-        appointmentCode: response.appointmentCode || ''
+        appointmentCode: apptCode
       });
+
+      // Complete payload so ERP shows every field immediately
+      const erpAppointment = {
+        id: apptCode,
+        customerName: formData.name,
+        customerMobile: formData.phone,
+        customerEmail: formData.email,
+        service: formData.treatment,
+        serviceId: formData.treatmentId,
+        therapist: formData.therapist || 'Any Available Specialist',
+        doctorId: formData.doctorId,
+        date: formData.date,
+        time: formData.time,
+        price: formData.price || 2500,
+        status: 'Pending',
+        source: 'ortho-neuro-care-frontend.vercel.app',
+        message: formData.message,
+        createdAt: new Date().toLocaleString('en-GB')
+      };
 
       // Also broadcast for instant multi-tab sync in ERP
       try {
         const bc = new BroadcastChannel('ortho_neuro_auir_sync');
         bc.postMessage({
           type: 'NEW_BOOKING',
-          payload: {
-            customerName: formData.name,
-            customerMobile: formData.phone,
-            customerEmail: formData.email,
-            service: formData.treatment,
-            date: formData.date,
-            time: formData.time,
-            source: 'ortho-neuro-care.vercel.app',
-            message: formData.message,
-            id: response.appointmentCode
-          }
+          payload: erpAppointment
         });
         bc.close();
+      } catch (err) {}
+
+      // Resilient local sync queue
+      try {
+        const existing = JSON.parse(localStorage.getItem('ortho_appointments_queue') || '[]');
+        existing.unshift(erpAppointment);
+        localStorage.setItem('ortho_appointments_queue', JSON.stringify(existing));
       } catch (err) {}
 
       setFormData({
@@ -111,6 +136,7 @@ const Booking = () => {
         doctorId: '',
         date: '',
         time: '',
+        price: 2500,
         message: ''
       });
     } catch (err) {

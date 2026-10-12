@@ -20,9 +20,9 @@ const appointmentSchema = new mongoose.Schema(
       },
       email: {
         type: String,
-        required: [true, 'Patient email is required'],
         trim: true,
         lowercase: true,
+        default: '',
       },
       age: Number,
       gender: String,
@@ -51,23 +51,24 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Appointment time slot is required'],
     },
+    price: {
+      type: Number,
+      default: 1500,
+    },
     message: {
       type: String,
       default: '',
     },
     status: {
       type: String,
-      enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled', 'Rescheduled'],
       default: 'Pending',
     },
     source: {
       type: String,
-      enum: ['Website', 'ERP Admin', 'Walk-in', 'Phone'],
       default: 'Website',
     },
     erpSyncStatus: {
       type: String,
-      enum: ['Synced', 'Pending'],
       default: 'Synced',
     },
   },
