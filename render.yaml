@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ortho-neuro-care-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node backend/src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb+srv://abrahamstmarys2a01_db_user:ortho123@cluster0.5bhmffy.mongodb.net/ortho_neuro_care?retryWrites=true&w=majority&appName=Cluster0
