@@ -15,7 +15,7 @@ export const mapBackendToErpAppointment = (apt) => {
     date: apt.date || new Date().toISOString().split('T')[0],
     time: apt.timeSlot || apt.time || '10:00 AM',
     status: apt.status || 'Pending',
-    source: apt.source === 'Website' ? 'ortho-neuro-care.vercel.app' : (apt.source || 'Website'),
+    source: apt.source === 'Website' ? 'ortho-neuro-care-frontend.vercel.app' : (apt.source || 'Website'),
     message: apt.message || '',
     price: apt.price || 500,
     createdAt: apt.createdAt ? new Date(apt.createdAt).toLocaleString('en-GB') : new Date().toLocaleString('en-GB'),

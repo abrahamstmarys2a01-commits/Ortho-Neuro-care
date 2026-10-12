@@ -243,9 +243,9 @@ export const AppointmentsList = () => {
                     <div style={{ fontSize: '0.72rem', color: '#708273' }}>{apt.time}</div>
                   </td>
                   <td>
-                    {apt.source?.includes('ortho-neuro-care') ? (
-                      <span className="badge-online-source">
-                        <Globe size={10} /> ortho-neuro-care
+                    {apt.source?.includes('ortho-neuro-care') || apt.source === 'Website' ? (
+                      <span className="badge-online-source" title="Booked online via ortho-neuro-care-frontend.vercel.app">
+                        <Globe size={10} /> Live Website
                       </span>
                     ) : (
                       <span style={{ fontSize: '0.76rem', color: '#5b6e60', backgroundColor: '#f0ebd8', padding: '2px 8px', borderRadius: '4px' }}>

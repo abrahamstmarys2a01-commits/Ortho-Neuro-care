@@ -12,12 +12,12 @@ import { ReviewsList } from './components/reviews/ReviewsList';
 import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { ToastContainer } from './components/common/ToastContainer';
+import { Login } from './components/auth/Login';
 
-const MainLayout = () => {
+// ERP Main Dashboard Layout (Mounted when authenticated)
+const ErpDashboardLayout = () => {
   const { activeTab } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Global modals triggered from Quick Actions or Navbar
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
 
@@ -86,6 +86,24 @@ const MainLayout = () => {
       )}
     </div>
   );
+};
+
+// Main Entry Point Gate
+const MainLayout = () => {
+  const { isAuthenticated } = useApp();
+
+  // If not authenticated, display the login screen
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Login />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // Once authenticated, render ERP Dashboard immediately
+  return <ErpDashboardLayout />;
 };
 
 export default function App() {

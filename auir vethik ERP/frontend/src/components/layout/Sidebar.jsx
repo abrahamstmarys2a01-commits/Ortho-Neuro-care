@@ -9,12 +9,21 @@ import {
   Star,
   BarChart3, 
   Settings,
-  Globe2,
-  Leaf
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 
 export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
-  const { activeTab, setActiveTab, enquiries, appointments, reviews } = useApp();
+  const { 
+    activeTab, 
+    setActiveTab, 
+    enquiries, 
+    appointments, 
+    reviews, 
+    logout, 
+    currentUser, 
+    credentials 
+  } = useApp();
 
   const pendingEnquiriesCount = enquiries.filter(e => e.status === 'New Lead' || e.status === 'Pending Contact').length;
   const pendingAppointmentsCount = appointments.filter(a => a.status === 'Pending').length;
@@ -58,7 +67,7 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
         <div 
           onClick={() => handleNavClick('dashboard')}
           style={{
-            padding: '24px 20px 18px 20px',
+            padding: '20px 18px 16px 18px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
@@ -67,41 +76,49 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
           }}
         >
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            backgroundColor: '#1e4d2b',
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            backgroundColor: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#eaf2eb',
-            boxShadow: '0 4px 10px rgba(30, 77, 43, 0.2)'
+            padding: '5px',
+            boxShadow: '0 4px 10px rgba(30, 77, 43, 0.15)',
+            border: '1px solid #e0d5c1'
           }}>
-            {/* Ayurvedic Leaf Logo Icon */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C7 6 3 11 3 16C3 20.4 6.6 24 11 24C11.3 24 11.7 24 12 23.9C12.3 24 12.7 24 13 24C17.4 24 21 20.4 21 16C21 11 17 6 12 2Z" fill="#88c599"/>
-              <path d="M12 2V23C12 23 18 19 18 15C18 11 15 7 12 2Z" fill="#ffffff" fillOpacity="0.85"/>
-              <path d="M12 2V23C12 23 6 19 6 15C6 11 9 7 12 2Z" fill="#3a8a52"/>
-            </svg>
+            <img 
+              src="/images/logo.png" 
+              alt="Logo" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentNode.innerHTML = `
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e4d2b" stroke-width="2">
+                    <path d="M12 2C7 6 3 11 3 16C3 20.4 6.6 24 11 24C11.3 24 11.7 24 12 23.9C12.3 24 12.7 24 13 24C17.4 24 21 20.4 21 16C21 11 17 6 12 2Z" fill="#88c599"/>
+                  </svg>
+                `;
+              }}
+            />
           </div>
           <div>
             <div style={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: '1.22rem',
+              fontSize: '1.08rem',
               fontWeight: 700,
               color: '#1e4d2b',
               lineHeight: 1.15
             }}>
-              Auir Vethik
+              Ortho Neuro Care
             </div>
             <div style={{
-              fontSize: '0.68rem',
+              fontSize: '0.66rem',
               color: '#708375',
               letterSpacing: '0.04em',
               fontWeight: 600,
               textTransform: 'uppercase'
             }}>
-              Ayurveda & Wellness
+              Ayurvedic ERP
             </div>
           </div>
         </div>
@@ -157,61 +174,56 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
                     {item.badge}
                   </span>
                 )}
-
-                {item.pulse && !isActive && (
-                  <span style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    backgroundColor: '#1b7a43',
-                    animation: 'pulseSubtle 2s infinite'
-                  }}></span>
-                )}
               </button>
             );
           })}
         </nav>
       </div>
 
-      {/* Bottom Quote & Leaf Flourish */}
-      <div style={{
-        padding: '20px 18px',
-        margin: '12px',
-        backgroundColor: '#eee6d5',
-        borderRadius: '14px',
-        border: '1px solid #ded5c2',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
+      {/* Bottom User Info & Log Out */}
+      <div style={{ padding: '12px', borderTop: '1px solid #ede4d4' }}>
         <div style={{
-          position: 'absolute',
-          right: '-8px',
-          bottom: '-8px',
-          opacity: 0.15,
-          pointerEvents: 'none'
+          padding: '12px 14px',
+          backgroundColor: '#eee6d5',
+          borderRadius: '12px',
+          marginBottom: '8px'
         }}>
-          <Leaf size={60} color="#1e4d2b" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+            <ShieldCheck size={14} color="#1e4d2b" />
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e4d2b' }}>
+              {currentUser?.username || credentials?.username || 'admin'}
+            </span>
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#687b6d' }}>
+            Ortho Neuro Care Admin
+          </div>
         </div>
 
-        <div style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: '0.86rem',
-          fontStyle: 'italic',
-          color: '#344738',
-          lineHeight: 1.35,
-          marginBottom: '6px'
-        }}>
-          “Wellness is a journey, not a destination.”
-        </div>
-        <div style={{
-          fontSize: '0.68rem',
-          color: '#7b8d7e',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em'
-        }}>
-          Auir Vethik Holistic
-        </div>
+        <button
+          onClick={() => {
+            if (setMobileMenuOpen) setMobileMenuOpen(false);
+            logout();
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            width: '100%',
+            padding: '9px 12px',
+            borderRadius: '10px',
+            border: '1px solid #f0c5c5',
+            backgroundColor: '#fff4f4',
+            color: '#b91c1c',
+            fontWeight: 600,
+            fontSize: '0.82rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <LogOut size={15} />
+          <span>Log Out</span>
+        </button>
       </div>
     </aside>
   );

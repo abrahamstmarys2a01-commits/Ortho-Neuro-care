@@ -85,10 +85,10 @@ export const UpcomingAppointments = () => {
                   <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#243328' }}>
                     {apt.customerName}
                   </span>
-                  {apt.source === 'ortho-neuro-care.vercel.app' && (
+                  {(apt.source?.includes('ortho-neuro-care') || apt.source === 'Website') && (
                     <span 
                       className="badge-online-source" 
-                      title="Direct booking from ortho-neuro-care.vercel.app"
+                      title="Direct booking from ortho-neuro-care-frontend.vercel.app"
                     >
                       <Globe size={10} /> Online
                     </span>

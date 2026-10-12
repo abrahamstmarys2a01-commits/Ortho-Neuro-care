@@ -57,7 +57,34 @@ const playSoundChime = () => {
   }
 };
 
+const DEFAULT_CREDENTIALS = {
+  username: 'admin',
+  password: 'admin123',
+  name: 'Ortho Neuro Admin',
+  role: 'Super Administrator'
+};
+
+const getStoredCredentials = () => {
+  try {
+    const raw = localStorage.getItem('ortho_erp_auth_credentials');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username && parsed.password) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading stored credentials', e);
+  }
+  return DEFAULT_CREDENTIALS;
+};
+
 export const AppProvider = ({ children }) => {
+  // Authentication State: Always displays login page first upon opening ERP link
+  const [credentials, setCredentials] = useState(getStoredCredentials);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   // Navigation
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +110,70 @@ export const AppProvider = ({ children }) => {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
+  };
+
+  // Auth Functions
+  const login = (usernameInput, passwordInput) => {
+    const activeCreds = getStoredCredentials();
+    const cleanUser = (usernameInput || '').trim();
+
+    if (cleanUser === activeCreds.username && passwordInput === activeCreds.password) {
+      const user = {
+        username: activeCreds.username,
+        name: activeCreds.name || 'Ortho Neuro Admin',
+        role: activeCreds.role || 'Super Administrator',
+        loginTime: new Date().toISOString()
+      };
+      localStorage.setItem('ortho_erp_session', JSON.stringify(user));
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      setActiveTab('dashboard');
+      showToast('Welcome Back!', `Logged in successfully as ${user.username}.`);
+      return { success: true };
+    } else {
+      return { 
+        success: false, 
+        message: 'Invalid username or password. Please verify your credentials and try again.' 
+      };
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('ortho_erp_session');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    showToast('Logged Out', 'You have been logged out of the ERP system.', 'info');
+  };
+
+  const changePassword = (currentPassword, newPassword, newUsername) => {
+    const activeCreds = getStoredCredentials();
+
+    if (currentPassword !== activeCreds.password) {
+      return { success: false, message: 'Current password does not match.' };
+    }
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      return { success: false, message: 'New password must be at least 4 characters.' };
+    }
+
+    const updated = {
+      ...activeCreds,
+      username: (newUsername && newUsername.trim()) ? newUsername.trim() : activeCreds.username,
+      password: newPassword
+    };
+
+    localStorage.setItem('ortho_erp_auth_credentials', JSON.stringify(updated));
+    setCredentials(updated);
+
+    // Also update session user if username changed
+    if (currentUser) {
+      const updatedUser = { ...currentUser, username: updated.username };
+      localStorage.setItem('ortho_erp_session', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+    }
+
+    showToast('Password Changed', 'Your password has been changed successfully. Use the new password for future logins.');
+    return { success: true };
   };
 
   // Sync strictly with live MongoDB Atlas Database
@@ -226,6 +317,7 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('auir_appointments');
     localStorage.removeItem('auir_enquiries');
     localStorage.removeItem('auir_reviews');
+    localStorage.removeItem('ortho_erp_session');
 
     syncLiveBackend(true);
 
@@ -233,7 +325,23 @@ export const AppProvider = ({ children }) => {
       syncLiveBackend(false);
     }, 3500);
 
-    return () => clearInterval(interval);
+    let bc;
+    try {
+      bc = new BroadcastChannel('ortho_neuro_auir_sync');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_BOOKING' && event.data?.payload) {
+          const apt = event.data.payload;
+          setAppointments((prev) => [apt, ...prev.filter((a) => a.id !== apt.id)]);
+          playSoundChime();
+          showToast('⚡ Live Website Booking!', `New booking from ${apt.customerName} for ${apt.service} (${apt.time})`);
+        }
+      };
+    } catch (e) {}
+
+    return () => {
+      clearInterval(interval);
+      if (bc) bc.close();
+    };
   }, []);
 
   // Add Appointment (Direct in ERP -> Writes to Atlas Database)
@@ -464,7 +572,13 @@ export const AppProvider = ({ children }) => {
         deleteReview,
         convertEnquiryToAppointment,
         statusBreakdown,
-        playSoundChime
+        playSoundChime,
+        isAuthenticated,
+        currentUser,
+        credentials,
+        login,
+        logout,
+        changePassword
       }}
     >
       {children}

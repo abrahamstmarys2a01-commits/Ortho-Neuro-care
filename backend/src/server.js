@@ -1,3 +1,12 @@
+import dns from 'node:dns';
+
+// Configure public DNS resolvers for reliable MongoDB Atlas SRV resolution
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (e) {
+  // Ignore if unsupported
+}
+
 import dotenv from 'dotenv';
 import app from './app.js';
 import { connectDB } from './config/db.js';
@@ -5,7 +14,7 @@ import { connectDB } from './config/db.js';
 // Load .env
 dotenv.config();
 
-// Connect Database
+// Connect Database (MongoDB Atlas)
 connectDB();
 
 const PORT = process.env.PORT || 5000;

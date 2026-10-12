@@ -11,7 +11,10 @@ import {
   ExternalLink,
   ChevronDown,
   Menu,
-  X
+  X,
+  LogOut,
+  KeyRound,
+  Activity
 } from 'lucide-react';
 
 export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
@@ -21,7 +24,10 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
     notifications, 
     setNotifications, 
     setActiveTab, 
-    receiveExternalBooking 
+    receiveExternalBooking,
+    logout,
+    currentUser,
+    credentials
   } = useApp();
   
   const [showNotifications, setShowNotifications] = useState(false);
@@ -131,8 +137,33 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
       </div>
 
       {/* Right Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Live Patient Portal link */}
+        <a
+          href="https://ortho-neuro-care-frontend.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-subtle"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '9999px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2d8c5',
+            color: '#1e4d2b',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+          }}
+          title="Open live patient website"
+        >
+          <Activity size={13} color="#1e4d2b" />
+          <span className="hide-on-compact-mobile">Patient Portal</span>
+          <ExternalLink size={11} color="#708375" />
+        </a>
 
         {/* Notification Bell */}
         <div style={{ position: 'relative' }}>
@@ -182,6 +213,7 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
               right: 0,
               top: '46px',
               width: '340px',
+              maxWidth: '90vw',
               backgroundColor: '#ffffff',
               borderRadius: '14px',
               boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
@@ -264,8 +296,10 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
               <User size={18} />
             </div>
             <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#243328' }}>Admin</div>
-              <div style={{ fontSize: '0.7rem', color: '#7a8c7e' }}>Super Admin</div>
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#243328' }}>
+                {currentUser?.username || credentials?.username || 'admin'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#7a8c7e' }}>Ortho Neuro ERP</div>
             </div>
             <ChevronDown size={14} color="#7a8c7e" />
           </div>
@@ -276,7 +310,7 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
               position: 'absolute',
               right: 0,
               top: '46px',
-              width: '200px',
+              width: '210px',
               backgroundColor: '#ffffff',
               borderRadius: '12px',
               boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
@@ -284,12 +318,42 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
               padding: '8px',
               zIndex: 100
             }}>
+              <div style={{ padding: '6px 10px 8px 10px', borderBottom: '1px solid #f0ebd8', marginBottom: '4px' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e4d2b' }}>
+                  {currentUser?.name || 'Administrator'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#708375' }}>
+                  Signed in as <strong>{currentUser?.username || credentials?.username || 'admin'}</strong>
+                </div>
+              </div>
+
               <button
                 onClick={() => { setActiveTab('settings'); setShowProfileMenu(false); }}
                 style={{
                   width: '100%',
                   textAlign: 'left',
-                  padding: '8px 12px',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  color: '#243328',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <KeyRound size={14} color="#1e4d2b" /> Change Password
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('settings'); setShowProfileMenu(false); }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 10px',
                   borderRadius: '6px',
                   background: 'transparent',
                   border: 'none',
@@ -301,26 +365,31 @@ export const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
               >
                 Clinic Settings
               </button>
+
               <div style={{ height: '1px', background: '#f0ebd8', margin: '4px 0' }}></div>
+              
               <button
                 onClick={() => {
-                  alert('Auir Vethik ERP is running in full admin mode.');
                   setShowProfileMenu(false);
+                  logout();
                 }}
                 style={{
                   width: '100%',
                   textAlign: 'left',
-                  padding: '8px 12px',
+                  padding: '8px 10px',
                   borderRadius: '6px',
                   background: 'transparent',
                   border: 'none',
                   fontSize: '0.82rem',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  color: '#c93b3b'
+                  color: '#c93b3b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
               >
-                Log Out
+                <LogOut size={14} /> Log Out
               </button>
             </div>
           )}
