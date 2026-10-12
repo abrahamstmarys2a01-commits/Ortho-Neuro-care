@@ -24,6 +24,10 @@ const appointmentSchema = new mongoose.Schema(
         lowercase: true,
         default: '',
       },
+      city: {
+        type: String,
+        default: 'Chennai',
+      },
       age: Number,
       gender: String,
     },

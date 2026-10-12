@@ -17,11 +17,33 @@ import {
   X
 } from 'lucide-react';
 
+export const CITY_OPTIONS = [
+  'Chennai',
+  'Coimbatore',
+  'Madurai',
+  'Tiruchirappalli (Trichy)',
+  'Salem',
+  'Tirunelveli',
+  'Erode',
+  'Vellore',
+  'Thanjavur',
+  'Dindigul',
+  'Kanchipuram',
+  'Tiruppur',
+  'Nagercoil',
+  'Hosur',
+  'Cuddalore',
+  'Puducherry',
+  'Bengaluru',
+  'Other'
+];
+
 export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpen }) => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, appointments, searchQuery, showToast } = useApp();
 
   const [statusFilter, setStatusFilter] = useState('All');
   const [sourceFilter, setSourceFilter] = useState('All');
+  const [cityFilter, setCityFilter] = useState('All');
   const [localSearch, setLocalSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -54,8 +76,9 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
       sourceFilter === 'All' ||
       (sourceFilter === 'Online' && c.source?.includes('ortho-neuro-care')) ||
       c.source === sourceFilter;
+    const matchesCity = cityFilter === 'All' || c.city === cityFilter;
 
-    return matchesSearch && matchesStatus && matchesSource;
+    return matchesSearch && matchesStatus && matchesSource && matchesCity;
   });
 
   const totalPages = Math.ceil(filteredCustomers.length / pageSize) || 1;
@@ -193,6 +216,19 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
             <option value="Walk-in">Walk-in</option>
             <option value="WhatsApp">WhatsApp</option>
           </select>
+
+          {/* City Filter Dropdown */}
+          <select
+            className="form-select"
+            value={cityFilter}
+            onChange={(e) => { setCityFilter(e.target.value); setCurrentPage(1); }}
+            style={{ width: 'auto', padding: '6px 12px', fontSize: '0.82rem' }}
+          >
+            <option value="All">All Cities</option>
+            {CITY_OPTIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
 
         {/* Search */}
@@ -218,6 +254,7 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
               <th>Name</th>
               <th>Mobile</th>
               <th>Email</th>
+              <th>City</th>
               <th>Enquiries</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -226,7 +263,7 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
           <tbody>
             {paginatedCustomers.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#7a8c7e' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#7a8c7e' }}>
                   No customers found.
                 </td>
               </tr>
@@ -264,6 +301,12 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
                   </td>
                   <td style={{ color: '#3f5245' }}>{cust.mobile}</td>
                   <td style={{ color: '#66786a' }}>{cust.email || '-'}</td>
+                  <td>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#1e4d2b', fontWeight: 600, fontSize: '0.85rem' }}>
+                      <MapPin size={13} color="#52b788" />
+                      {cust.city || 'Chennai'}
+                    </span>
+                  </td>
                   <td>
                     <span style={{
                       backgroundColor: '#f1ebdc',
@@ -444,12 +487,15 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">City</label>
-                  <input
-                    type="text"
-                    className="form-input"
+                  <select
+                    className="form-select"
                     value={newCustomerForm.city}
                     onChange={(e) => setNewCustomerForm({ ...newCustomerForm, city: e.target.value })}
-                  />
+                  >
+                    {CITY_OPTIONS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -549,16 +595,31 @@ export const CustomersList = ({ isAddCustomerModalOpen, setIsAddCustomerModalOpe
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select
-                  className="form-select"
-                  value={editCustomer.status}
-                  onChange={(e) => setEditCustomer({ ...editCustomer, status: e.target.value })}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <select
+                    className="form-select"
+                    value={editCustomer.city || 'Chennai'}
+                    onChange={(e) => setEditCustomer({ ...editCustomer, city: e.target.value })}
+                  >
+                    {CITY_OPTIONS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-select"
+                    value={editCustomer.status}
+                    onChange={(e) => setEditCustomer({ ...editCustomer, status: e.target.value })}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>

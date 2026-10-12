@@ -42,6 +42,8 @@ export const createAppointment = async (req, res) => {
       });
     }
 
+    const patientCity = req.body.city || req.body.patient?.city || 'Chennai';
+
     if (mongoose.connection.readyState === 1) {
       // Check if duplicate appointment already exists for this patient, treatment, and date
       const existingApt = await Appointment.findOne({
@@ -73,6 +75,7 @@ export const createAppointment = async (req, res) => {
           name: patientName,
           phone: cleanPhone || patientPhone,
           email: patientEmail,
+          city: patientCity,
         },
         treatmentId: isValidObjectId(treatmentId) ? treatmentId : undefined,
         treatmentName,
@@ -103,6 +106,7 @@ export const createAppointment = async (req, res) => {
             name: patientName,
             mobile: cleanPhone || patientPhone,
             email: patientEmail,
+            city: patientCity,
             source: source || 'Website',
             lastVisit: date,
             $inc: { totalVisits: 1 },

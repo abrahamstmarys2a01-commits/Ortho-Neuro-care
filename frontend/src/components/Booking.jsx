@@ -9,6 +9,7 @@ const Booking = () => {
     name: '',
     phone: '',
     email: '',
+    city: 'Chennai',
     treatment: '',
     treatmentId: '',
     therapist: '',
@@ -151,6 +152,7 @@ const Booking = () => {
         customerName: formData.name,
         customerMobile: formData.phone,
         customerEmail: formData.email,
+        customerCity: formData.city || 'Chennai',
         service: formData.treatment,
         serviceId: formData.treatmentId,
         therapist: formData.therapist || 'Any Available Specialist',
@@ -178,6 +180,7 @@ const Booking = () => {
         name: '',
         phone: '',
         email: '',
+        city: 'Chennai',
         treatment: '',
         treatmentId: '',
         therapist: '',
@@ -294,6 +297,38 @@ const Booking = () => {
                   />
                 </div>
                 <div className="form-group">
+                  <label htmlFor="city">City / Location</label>
+                  <select 
+                    id="city" 
+                    name="city" 
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="Chennai">Chennai</option>
+                    <option value="Coimbatore">Coimbatore</option>
+                    <option value="Madurai">Madurai</option>
+                    <option value="Tiruchirappalli (Trichy)">Tiruchirappalli (Trichy)</option>
+                    <option value="Salem">Salem</option>
+                    <option value="Tirunelveli">Tirunelveli</option>
+                    <option value="Erode">Erode</option>
+                    <option value="Vellore">Vellore</option>
+                    <option value="Thanjavur">Thanjavur</option>
+                    <option value="Dindigul">Dindigul</option>
+                    <option value="Kanchipuram">Kanchipuram</option>
+                    <option value="Tiruppur">Tiruppur</option>
+                    <option value="Nagercoil">Nagercoil</option>
+                    <option value="Hosur">Hosur</option>
+                    <option value="Puducherry">Puducherry</option>
+                    <option value="Bengaluru">Bengaluru</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
                   <label htmlFor="treatment">Select Treatment</label>
                   <select 
                     id="treatment" 
@@ -316,6 +351,32 @@ const Booking = () => {
                         <option value="Shirodhara">Shirodhara</option>
                         <option value="Deep Tissue Massage">Deep Tissue Massage</option>
                         <option value="Panchakarma">Panchakarma</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="therapist">Preferred Doctor / Specialist</label>
+                  <select 
+                    id="therapist" 
+                    name="therapist" 
+                    value={formData.therapist}
+                    onChange={handleChange}
+                    className="form-control"
+                  >
+                    <option value="">Any Available Specialist</option>
+                    {doctorsList && doctorsList.length > 0 ? (
+                      doctorsList.map((doc) => (
+                        <option key={doc._id || doc.name} value={doc.name}>
+                          {doc.name} - {doc.specialization || doc.role}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Male Therapist">Male Therapist</option>
+                        <option value="Female Therapist">Female Therapist</option>
+                        <option value="Dr. Rajesh Sharma, BAMS, MD (Ayu)">Dr. Rajesh Sharma, BAMS, MD (Ayu)</option>
                       </>
                     )}
                   </select>
