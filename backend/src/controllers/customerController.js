@@ -43,7 +43,24 @@ export const getCustomers = async (req, res) => {
   try {
     if (mongoose.connection.readyState === 1) {
       await syncCustomersFromAppointments();
-      const customers = await Customer.find().sort({ createdAt: -1 });
+      const rawCustomers = await Customer.find().sort({ createdAt: -1 });
+
+      const seenPhones = new Set();
+      const seenIds = new Set();
+      const customers = [];
+
+      for (const cust of rawCustomers) {
+        const id = cust._id.toString();
+        const phone = (cust.mobile || '').replace(/\D/g, '').slice(-10);
+
+        if (seenIds.has(id)) continue;
+        if (phone && seenPhones.has(phone)) continue;
+
+        seenIds.add(id);
+        if (phone) seenPhones.add(phone);
+        customers.push(cust);
+      }
+
       return res.status(200).json({ success: true, count: customers.length, data: customers });
     } else {
       return res.status(200).json({ success: true, count: 0, data: [] });
@@ -60,10 +77,29 @@ export const createCustomer = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Name and mobile are required.' });
     }
 
+    const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+
     if (mongoose.connection.readyState === 1) {
+      // Check if existing customer with same phone exists
+      const existing = await Customer.findOne({
+        $or: [
+          { mobile: mobile.trim() },
+          ...(cleanMobile ? [{ mobile: cleanMobile }, { mobile: { $regex: cleanMobile } }] : [])
+        ]
+      });
+
+      if (existing) {
+        existing.name = name.trim();
+        if (email) existing.email = email.trim();
+        if (city) existing.city = city;
+        if (notes) existing.notes = notes;
+        await existing.save();
+        return res.status(200).json({ success: true, isDuplicate: true, data: existing });
+      }
+
       const customer = await Customer.create({
         name: name.trim(),
-        mobile: mobile.trim(),
+        mobile: cleanMobile || mobile.trim(),
         email: email ? email.trim() : '',
         city: city || 'Chennai',
         source: source || 'Direct Walk-in',

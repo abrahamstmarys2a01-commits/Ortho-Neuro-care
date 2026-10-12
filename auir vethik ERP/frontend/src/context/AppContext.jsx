@@ -95,6 +95,95 @@ const getInitialSessionUser = () => {
   return null;
 };
 
+// Strict Deduplication Helpers: Ensure only 100% original, unique data is presented
+const deduplicateAppointments = (list) => {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set();
+  const seenKeys = new Set();
+  const result = [];
+
+  for (const apt of list) {
+    if (!apt) continue;
+    const idKey = (apt.id || apt._backendId || apt.appointmentCode || '').trim();
+    const phone = (apt.customerMobile || apt.patient?.phone || '').replace(/\D/g, '').slice(-10);
+    const date = (apt.date || '').trim();
+    const service = (apt.service || apt.treatmentName || '').trim().toLowerCase();
+    const compositeKey = `${phone}_${date}_${service}`;
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (phone && compositeKey !== '__' && seenKeys.has(compositeKey)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (phone && compositeKey !== '__') seenKeys.add(compositeKey);
+    result.push(apt);
+  }
+  return result;
+};
+
+const deduplicateCustomers = (list) => {
+  if (!Array.isArray(list)) return [];
+  const seenPhones = new Set();
+  const seenIds = new Set();
+  const result = [];
+
+  for (const c of list) {
+    if (!c) continue;
+    const idKey = (c.id || c._backendId || '').toString().trim();
+    const phone = (c.mobile || '').replace(/\D/g, '').slice(-10);
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (phone && seenPhones.has(phone)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (phone) seenPhones.add(phone);
+    result.push(c);
+  }
+  return result;
+};
+
+const deduplicateReviews = (list) => {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set();
+  const seenContent = new Set();
+  const result = [];
+
+  for (const r of list) {
+    if (!r) continue;
+    const idKey = (r.id || r._backendId || '').toString().trim();
+    const content = `${(r.name || '').trim()}_${(r.treatment || '').trim()}_${(r.comment || '').trim()}`.toLowerCase();
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (content.length > 4 && seenContent.has(content)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (content.length > 4) seenContent.add(content);
+    result.push(r);
+  }
+  return result;
+};
+
+const deduplicateEnquiries = (list) => {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set();
+  const seenContent = new Set();
+  const result = [];
+
+  for (const e of list) {
+    if (!e) continue;
+    const idKey = (e.id || e._backendId || '').toString().trim();
+    const phone = (e.phone || '').replace(/\D/g, '').slice(-10);
+    const content = `${(e.name || '').trim()}_${phone}_${e.date || ''}`.toLowerCase();
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (content.length > 4 && seenContent.has(content)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (content.length > 4) seenContent.add(content);
+    result.push(e);
+  }
+  return result;
+};
+
 export const AppProvider = ({ children }) => {
   // Authentication State: Session persists across refresh, shows login only after logout
   const [credentials, setCredentials] = useState(getStoredCredentials);
@@ -209,10 +298,17 @@ export const AppProvider = ({ children }) => {
         setServices(liveSvcs);
       }
 
-      // 2. Appointments (Real database only)
+      // 2. Appointments (Real database only, strictly deduplicated)
       if (liveApts) {
+        // Purge any stale temporary queues in browser localStorage
+        try {
+          localStorage.removeItem('ortho_appointments_queue');
+        } catch (e) {}
+
+        const cleanApts = deduplicateAppointments(liveApts);
+
         const newOnlineBookings = [];
-        liveApts.forEach((apt) => {
+        cleanApts.forEach((apt) => {
           if (!knownAptIdsRef.current.has(apt.id)) {
             knownAptIdsRef.current.add(apt.id);
             if (!isInitial) {
@@ -221,19 +317,7 @@ export const AppProvider = ({ children }) => {
           }
         });
 
-        let mergedApts = [...liveApts];
-        try {
-          const queued = JSON.parse(localStorage.getItem('ortho_appointments_queue') || '[]');
-          if (queued && queued.length > 0) {
-            queued.forEach(q => {
-              if (!mergedApts.some(a => a.id === q.id)) {
-                mergedApts.unshift(q);
-              }
-            });
-          }
-        } catch (e) {}
-
-        setAppointments(mergedApts);
+        setAppointments(cleanApts);
 
         if (newOnlineBookings.length > 0) {
           const latest = newOnlineBookings[0];
@@ -266,10 +350,11 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      // 3. Reviews (Real database only)
+      // 3. Reviews (Real database only, strictly deduplicated)
       if (liveRevs) {
+        const cleanRevs = deduplicateReviews(liveRevs);
         const newOnlineReviews = [];
-        liveRevs.forEach((rev) => {
+        cleanRevs.forEach((rev) => {
           if (!knownReviewIdsRef.current.has(rev.id)) {
             knownReviewIdsRef.current.add(rev.id);
             if (!isInitial) {
@@ -278,7 +363,7 @@ export const AppProvider = ({ children }) => {
           }
         });
 
-        setReviews(liveRevs);
+        setReviews(cleanRevs);
 
         if (newOnlineReviews.length > 0) {
           const latestRev = newOnlineReviews[0];
@@ -302,10 +387,11 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      // 4. Enquiries (Real database only)
+      // 4. Enquiries (Real database only, strictly deduplicated)
       if (liveEnqs) {
+        const cleanEnqs = deduplicateEnquiries(liveEnqs);
         const newEnquiries = [];
-        liveEnqs.forEach((enq) => {
+        cleanEnqs.forEach((enq) => {
           if (!knownEnqIdsRef.current.has(enq.id)) {
             knownEnqIdsRef.current.add(enq.id);
             if (!isInitial) {
@@ -314,7 +400,7 @@ export const AppProvider = ({ children }) => {
           }
         });
 
-        setEnquiries(liveEnqs);
+        setEnquiries(cleanEnqs);
 
         if (newEnquiries.length > 0) {
           const latestEnq = newEnquiries[0];
@@ -326,9 +412,10 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      // 5. Customers (Real database only)
+      // 5. Customers (Real database only, strictly deduplicated)
       if (liveCusts) {
-        setCustomers(liveCusts);
+        const cleanCusts = deduplicateCustomers(liveCusts);
+        setCustomers(cleanCusts);
       }
 
     } catch (err) {
@@ -345,6 +432,7 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('auir_appointments');
     localStorage.removeItem('auir_enquiries');
     localStorage.removeItem('auir_reviews');
+    localStorage.removeItem('ortho_appointments_queue');
 
     syncLiveBackend(true);
 
@@ -358,7 +446,7 @@ export const AppProvider = ({ children }) => {
       bc.onmessage = (event) => {
         if (event.data?.type === 'NEW_BOOKING' && event.data?.payload) {
           const apt = event.data.payload;
-          setAppointments((prev) => [apt, ...prev.filter((a) => a.id !== apt.id)]);
+          setAppointments((prev) => deduplicateAppointments([apt, ...prev]));
           knownAptIdsRef.current.add(apt.id);
           playSoundChime();
           try {
@@ -396,7 +484,7 @@ export const AppProvider = ({ children }) => {
     try {
       const created = await createLiveAppointment(data);
       if (created) {
-        setAppointments((prev) => [created, ...prev.filter(a => a.id !== created.id)]);
+        setAppointments((prev) => deduplicateAppointments([created, ...prev]));
         knownAptIdsRef.current.add(created.id);
         
         playSoundChime();
@@ -457,7 +545,7 @@ export const AppProvider = ({ children }) => {
     try {
       const created = await createLiveCustomer(data);
       if (created) {
-        setCustomers((prev) => [created, ...prev]);
+        setCustomers((prev) => deduplicateCustomers([created, ...prev]));
         showToast('Customer Added', `${data.name} saved in database.`);
         syncLiveBackend(false);
         return created;

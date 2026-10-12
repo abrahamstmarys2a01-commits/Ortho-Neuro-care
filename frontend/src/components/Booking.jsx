@@ -125,11 +125,25 @@ const Booking = () => {
       const response = await bookAppointmentApi(bookingPayload);
       const apptCode = response.appointmentCode || response.data?.appointmentCode || `APT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      if (response && response.isDuplicate) {
+        setStatus({
+          type: 'info',
+          message: response.message || `An appointment is already booked for this date (#${apptCode}).`,
+          appointmentCode: apptCode
+        });
+        return;
+      }
+
       setStatus({
         type: 'success',
         message: response.message || 'Thank you for booking! We will confirm your appointment shortly.',
         appointmentCode: apptCode
       });
+
+      // Clear any temporary queue since appointment is safely saved in live database
+      try {
+        localStorage.removeItem('ortho_appointments_queue');
+      } catch (err) {}
 
       // Complete payload so ERP shows every field immediately
       const erpAppointment = {
@@ -150,7 +164,7 @@ const Booking = () => {
         createdAt: new Date().toLocaleString('en-GB')
       };
 
-      // Also broadcast for instant multi-tab sync in ERP
+      // Broadcast for instant multi-tab sync in ERP
       try {
         const bc = new BroadcastChannel('ortho_neuro_auir_sync');
         bc.postMessage({
@@ -158,13 +172,6 @@ const Booking = () => {
           payload: erpAppointment
         });
         bc.close();
-      } catch (err) {}
-
-      // Resilient local sync queue
-      try {
-        const existing = JSON.parse(localStorage.getItem('ortho_appointments_queue') || '[]');
-        existing.unshift(erpAppointment);
-        localStorage.setItem('ortho_appointments_queue', JSON.stringify(existing));
       } catch (err) {}
 
       setFormData({

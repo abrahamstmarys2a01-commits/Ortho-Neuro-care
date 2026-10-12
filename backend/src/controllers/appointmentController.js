@@ -33,6 +33,7 @@ export const createAppointment = async (req, res) => {
     const treatmentName = treatment || req.body.treatmentName;
     const selectedTime = time || timeSlot;
     const aptPrice = Number(price) || 1500;
+    const cleanPhone = (patientPhone || '').replace(/\D/g, '').slice(-10);
 
     if (!patientName || !patientPhone || !treatmentName || !date || !selectedTime) {
       return res.status(400).json({
@@ -41,39 +42,66 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const appointmentCode = `APT-${new Date().getFullYear()}-${randomSuffix}`;
-
-    const appointmentPayload = {
-      appointmentCode,
-      patient: {
-        name: patientName,
-        phone: patientPhone,
-        email: patientEmail,
-      },
-      treatmentId: isValidObjectId(treatmentId) ? treatmentId : undefined,
-      treatmentName,
-      doctorId: isValidObjectId(doctorId) ? doctorId : undefined,
-      doctorName: therapist || 'Any Therapist',
-      date,
-      timeSlot: selectedTime,
-      price: aptPrice,
-      message: message || '',
-      status: 'Pending',
-      source: source || 'Website',
-      erpSyncStatus: 'Synced',
-    };
-
     if (mongoose.connection.readyState === 1) {
+      // Check if duplicate appointment already exists for this patient, treatment, and date
+      const existingApt = await Appointment.findOne({
+        $or: [
+          { 'patient.phone': patientPhone },
+          ...(cleanPhone ? [{ 'patient.phone': { $regex: cleanPhone } }] : [])
+        ],
+        treatmentName,
+        date,
+        status: { $ne: 'Cancelled' }
+      });
+
+      if (existingApt) {
+        return res.status(200).json({
+          success: true,
+          isDuplicate: true,
+          message: `Appointment is already booked (#${existingApt.appointmentCode}).`,
+          appointmentCode: existingApt.appointmentCode,
+          data: existingApt,
+        });
+      }
+
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const appointmentCode = `APT-${new Date().getFullYear()}-${randomSuffix}`;
+
+      const appointmentPayload = {
+        appointmentCode,
+        patient: {
+          name: patientName,
+          phone: cleanPhone || patientPhone,
+          email: patientEmail,
+        },
+        treatmentId: isValidObjectId(treatmentId) ? treatmentId : undefined,
+        treatmentName,
+        doctorId: isValidObjectId(doctorId) ? doctorId : undefined,
+        doctorName: therapist || 'Any Therapist',
+        date,
+        timeSlot: selectedTime,
+        price: aptPrice,
+        message: message || '',
+        status: 'Pending',
+        source: source || 'Website',
+        erpSyncStatus: 'Synced',
+      };
+
       const appointment = await Appointment.create(appointmentPayload);
 
-      // Auto-sync customer to ERP Customers list
+      // Auto-sync customer to ERP Customers list uniquely
       try {
         await Customer.findOneAndUpdate(
-          { mobile: patientPhone },
+          {
+            $or: [
+              { mobile: patientPhone },
+              { mobile: cleanPhone },
+              ...(cleanPhone ? [{ mobile: { $regex: cleanPhone } }] : [])
+            ]
+          },
           {
             name: patientName,
-            mobile: patientPhone,
+            mobile: cleanPhone || patientPhone,
             email: patientEmail,
             source: source || 'Website',
             lastVisit: date,
@@ -82,9 +110,9 @@ export const createAppointment = async (req, res) => {
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
       } catch (custErr) {
-        // Log quietly without blocking appointment creation
         console.warn('Customer auto-sync note:', custErr.message);
       }
+
       return res.status(201).json({
         success: true,
         message: 'Appointment booked successfully!',
@@ -92,9 +120,26 @@ export const createAppointment = async (req, res) => {
         data: appointment,
       });
     } else {
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const appointmentCode = `APT-${new Date().getFullYear()}-${randomSuffix}`;
+
       const mockAppointment = {
         _id: 'mock_' + Date.now(),
-        ...appointmentPayload,
+        appointmentCode,
+        patient: {
+          name: patientName,
+          phone: cleanPhone || patientPhone,
+          email: patientEmail,
+        },
+        treatmentName,
+        doctorName: therapist || 'Any Therapist',
+        date,
+        timeSlot: selectedTime,
+        price: aptPrice,
+        message: message || '',
+        status: 'Pending',
+        source: source || 'Website',
+        erpSyncStatus: 'Synced',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -133,13 +178,33 @@ export const getAppointments = async (req, res) => {
         ];
       }
 
-      const appointments = await Appointment.find(filter).sort({ createdAt: -1 });
+      const rawAppointments = await Appointment.find(filter).sort({ createdAt: -1 });
+
+      // Deduplicate: Keep only original unique records
+      const seenCodes = new Set();
+      const seenComposite = new Set();
+      const appointments = [];
+
+      for (const apt of rawAppointments) {
+        const code = (apt.appointmentCode || apt._id.toString()).trim();
+        const p = (apt.patient?.phone || '').replace(/\D/g, '').slice(-10);
+        const composite = `${p}_${apt.date}_${(apt.treatmentName || '').toLowerCase()}`;
+
+        if (seenCodes.has(code)) continue;
+        if (p && seenComposite.has(composite)) continue;
+
+        seenCodes.add(code);
+        if (p) seenComposite.add(composite);
+        appointments.push(apt);
+      }
+
       return res.status(200).json({
         success: true,
         count: appointments.length,
         data: appointments,
       });
     } else {
+
       let results = [...fallbackAppointments];
       if (status) results = results.filter((a) => a.status === status);
       if (date) results = results.filter((a) => a.date === date);
